@@ -1,0 +1,11 @@
+!.gitignore
+*.gz
+*.zip
+*.md5
+*.sha1
+*~
+*.orig
+*.rej
+build
+dist
+nbproject/private
