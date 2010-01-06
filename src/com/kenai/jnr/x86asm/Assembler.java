@@ -620,7 +620,7 @@ void _emitModM(int opReg, Mem mem, int immSize)
       // Mem <- Reg
       if (o1.isMem() && o2.isReg())
       {
-        _emitX86RM(opCode + (!o2.isRegType(REG_GPB) ? 1 : 0),
+        _emitX86RM(opCode + intValue(!o2.isRegType(REG_GPB)),
           o2.isRegType(REG_GPW),
           o2.isRegType(REG_GPQ),
           ((Register) o2).code(),
@@ -632,7 +632,7 @@ void _emitModM(int opReg, Mem mem, int immSize)
       // Reg <- Reg|Mem
       if (o1.isReg() && o2.isRegMem())
       {
-        _emitX86RM(opCode + 2 + (!o1.isRegType(REG_GPB) ? 1 : 0),
+        _emitX86RM(opCode + 2 + intValue(!o1.isRegType(REG_GPB)),
           o1.isRegType(REG_GPW),
           o1.isRegType(REG_GPQ),
           ((Register) o1).code(),
@@ -649,7 +649,7 @@ void _emitModM(int opReg, Mem mem, int immSize)
         else if (o1.isRegType(REG_GPQ))
           _emitByte(0x48); // REX.W
 
-        _emitByte((opReg << 3) | (0x04 + (!o1.isRegType(REG_GPB) ? 1 : 0)));
+        _emitByte((opReg << 3) | (0x04 + intValue(!o1.isRegType(REG_GPB))));
         _emitImmediate(
           (Immediate) o2, o1.size() <= 4 ? o1.size() : 4);
         return;
@@ -1081,7 +1081,7 @@ void _emitModM(int opReg, Mem mem, int immSize)
           assert(dst.isRegType(REG_GPB) || dst.isRegType(REG_GPW) ||
                         dst.isRegType(REG_GPD) || dst.isRegType(REG_GPQ));
 
-          _emitX86RM(0x0000008A + (!dst.isRegType(REG_GPB) ? 1 : 0),
+          _emitX86RM(0x0000008A + intValue(!dst.isRegType(REG_GPB)),
             dst.isRegType(REG_GPW),
             dst.isRegType(REG_GPQ),
             ((Register) dst).code(),
@@ -1174,7 +1174,7 @@ void _emitModM(int opReg, Mem mem, int immSize)
             _emitRexR(reg.size() == 8, 0, 0);
         }
 
-        _emitByte(opCode + (reg.size() != 1 ? 1 : 0));
+        _emitByte(opCode + intValue(reg.size() != 1));
         _emitImmediate(imm, is64() ? 8 : 4);
         return;
       }
@@ -1301,7 +1301,7 @@ void _emitModM(int opReg, Mem mem, int immSize)
       if (o1.isRegMem())
       {
         final Operand op = (o1);
-        _emitX86RM(id.opCode1 + (op.size() != 1 ? 1 : 0),
+        _emitX86RM(id.opCode1 + intValue(op.size() != 1),
           op.size() == 2,
           op.size() == 8, id.opCodeR, op,
           0);
@@ -1317,7 +1317,7 @@ void _emitModM(int opReg, Mem mem, int immSize)
       {
         final Operand dst = (o1);
         final Register src = (Register)(o2);
-        _emitX86RM(id.opCode1 + (src.type() != REG_GPB ? 1 : 0),
+        _emitX86RM(id.opCode1 + intValue(src.type() != REG_GPB),
           src.type() == REG_GPW,
           src.type() == REG_GPQ, src.code(), dst,
           0);
@@ -1372,7 +1372,7 @@ void _emitModM(int opReg, Mem mem, int immSize)
           o1.size() == 2,
           o1.size() == 8,
           id.opCodeR, (o1),
-          useImm8 ? 1 : 0);
+          intValue(useImm8));
         if (useImm8)
           _emitImmediate((Immediate)(o2), 1);
         return;
@@ -1391,11 +1391,11 @@ void _emitModM(int opReg, Mem mem, int immSize)
 
         assert(dst.size() == src1.size());
 
-        _emitX86RM(id.opCode1 + (src2.isReg() ? 1 : 0),
+        _emitX86RM(id.opCode1 + intValue(src2.isReg()),
           src1.isRegType(REG_GPW),
           src1.isRegType(REG_GPQ),
           src1.code(), dst,
-          src2.isImm() ? 1 : 0);
+          intValue(src2.isImm()));
         if (src2.isImm())
           _emitImmediate((Immediate)(src2), 1);
         return;
@@ -1409,7 +1409,7 @@ void _emitModM(int opReg, Mem mem, int immSize)
       if (o1.isRegMem() && o2.isReg())
       {
         assert(o1.size() == o2.size());
-        _emitX86RM(0x84 + (o2.size() != 1 ? 1 : 0),
+        _emitX86RM(0x84 + intValue(o2.size() != 1),
           o2.size() == 2, o2.size() == 8,
           ((BaseReg) o2).code(),
           (o1),
@@ -1427,7 +1427,7 @@ void _emitModM(int opReg, Mem mem, int immSize)
             _emitRexRM(o1.size() == 8, 0, (o1));
         }
 
-        _emitByte(0xA8 + (o1.size() != 1 ? 1 : 0));
+        _emitByte(0xA8 + intValue(o1.size() != 1));
         _emitImmediate((Immediate)(o2), immSize);
         return;
       }
@@ -1441,7 +1441,7 @@ void _emitModM(int opReg, Mem mem, int immSize)
 
         if (is64()) _emitRexRM(o1.size() == 8, 0, (o1));
 
-        _emitByte(0xF6 + (o1.size() != 1 ? 1 : 0));
+        _emitByte(0xF6 + intValue(o1.size() != 1));
         _emitModRM(0, (o1), immSize);
         _emitImmediate((Immediate)(o2), immSize);
         return;
@@ -1472,7 +1472,7 @@ void _emitModM(int opReg, Mem mem, int immSize)
           return;
         }
 
-        _emitByte(0x86 + (!src.isRegType(REG_GPB) ? 1 : 0));
+        _emitByte(0x86 + intValue(!src.isRegType(REG_GPB)));
         _emitModRM(src.code(), dst, 0);
         return;
       }
