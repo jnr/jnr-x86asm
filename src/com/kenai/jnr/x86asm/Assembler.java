@@ -179,8 +179,6 @@ public final class Assembler extends Serializer {
         }
     }
 
-    boolean canEmit() { return true; }
-
     /** Emit Byte to internal buffer. */
     final void _emitByte(int  x) {
         _buffer.emitByte((byte) x);
