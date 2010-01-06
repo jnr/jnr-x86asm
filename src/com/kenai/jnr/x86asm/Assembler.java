@@ -309,205 +309,169 @@ public final class Assembler extends Serializer {
             }
         }
     }
+
+
     void _emitRexRM(boolean w, int opReg, Operand rm) {
         _emitRexRM(intValue(w), opReg, rm);
     }
 
 
+    void _emitModM(int opReg, Mem mem, int immSize) {
+        assert (mem.op() == OP_MEM);
 
-void _emitModM(int opReg, Mem mem, int immSize)
-{
-  assert(mem.op() == OP_MEM);
+        int baseReg = mem.base() & 0x7;
+        int indexReg = mem.index() & 0x7;
+        long disp = mem.displacement();
+        int shift = mem.shift();
 
-  int baseReg = mem.base() & 0x7;
-  int indexReg = mem.index() & 0x7;
-  long disp = mem.displacement();
-  int shift = mem.shift();
+        // [base + displacemnt]
+        if (mem.hasBase() && !mem.hasIndex()) {
+            // ESP/RSP/R12 == 4
+            if (baseReg == 4) {
+                int mod = 0;
 
-  // [base + displacemnt]
-  if (mem.hasBase() && !mem.hasIndex())
-  {
-    // ESP/RSP/R12 == 4
-    if (baseReg == 4)
-    {
-      int mod = 0;
+                if (disp != 0) {
+                    mod = isInt8(disp) ? 1 : 2;
+                }
 
-      if (disp != 0)
-      {
-        mod = isInt8(disp) ? 1 : 2;
-      }
+                _emitMod(mod, opReg, 4);
+                _emitSib(0, 4, 4);
 
-      _emitMod(mod, opReg, 4);
-      _emitSib(0, 4, 4);
-
-      if (disp != 0)
-      {
-        if (isInt8(disp))
-          _emitByte((byte) disp);
-        else
-          _emitInt32((int) disp);
-      }
-    }
-    // EBP/RBP/R13 == 5
-    else if (baseReg != 5 && disp == 0)
-    {
-      _emitMod(0, opReg, baseReg);
-    }
-    else if (isInt8(disp))
-    {
-      _emitMod(1, opReg, baseReg);
-      _emitByte((byte)disp);
-    }
-    else
-    {
-      _emitMod(2, opReg, baseReg);
-      _emitInt32((int)disp);
-    }
-  }
-
-  // [base + index * scale + displacemnt]
-  else if (mem.hasBase() && mem.hasIndex())
-  {
-    // ASMJIT_ASSERT(indexReg != RID_ESP);
-
-    // EBP/RBP/R13 == 5
-    if (baseReg != 5 && disp == 0)
-    {
-      _emitMod(0, opReg, 4);
-      _emitSib(shift, indexReg, baseReg);
-    }
-    else if (isInt8(disp))
-    {
-      _emitMod(1, opReg, 4);
-      _emitSib(shift, indexReg, baseReg);
-      _emitByte((byte)disp);
-    }
-    else
-    {
-      _emitMod(2, opReg, 4);
-      _emitSib(shift, indexReg, baseReg);
-      _emitInt32((int)disp);
-    }
-  }
-
-  // Address                       | 32-bit mode | 64-bit mode
-  // ------------------------------+-------------+---------------
-  // [displacement]                |   ABSOLUTE  | RELATIVE (RIP)
-  // [index * scale + displacemnt] |   ABSOLUTE  | ABSOLUTE (ZERO EXTENDED)
-  else
-  {
-    // In 32 bit mode is used absolute addressing model.
-    // In 64 bit mode is used relative addressing model together with absolute
-    // addressing one. Main problem is that if instruction contains SIB then
-    // relative addressing (RIP) is not possible.
-    if (!is64()) {
-
-        if (mem.hasIndex())
-        {
-          // ASMJIT_ASSERT(mem.index() != 4); // ESP/RSP == 4
-          _emitMod(0, opReg, 4);
-          _emitSib(shift, indexReg, 5);
-        }
-        else
-        {
-          _emitMod(0, opReg, 5);
+                if (disp != 0) {
+                    if (isInt8(disp)) {
+                        _emitByte((byte) disp);
+                    } else {
+                        _emitInt32((int) disp);
+                    }
+                }
+            } // EBP/RBP/R13 == 5
+            else if (baseReg != 5 && disp == 0) {
+                _emitMod(0, opReg, baseReg);
+            } else if (isInt8(disp)) {
+                _emitMod(1, opReg, baseReg);
+                _emitByte((byte) disp);
+            } else {
+                _emitMod(2, opReg, baseReg);
+                _emitInt32((int) disp);
+            }
         }
 
-        // X86 uses absolute addressing model, all relative addresses will be
-        // relocated to absolute ones.
-        if (mem.hasLabel())
-        {
-          Label label = mem.label();
-          int relocId = _relocData.size();
+        // [base + index * scale + displacemnt]
+        else if (mem.hasBase() && mem.hasIndex()) {
+            // ASMJIT_ASSERT(indexReg != RID_ESP);
 
-          
-          long destination = disp;
-          if (label.isBound())
-          {
-            destination += label.position();
-            // Dummy DWORD
-            _emitInt32(0);
-          }
-          else
-          {
-            _emitDisplacement(label, -4 - immSize, 4).relocId = relocId;
-          }
-
-          // Relative addressing will be relocated to absolute address.
-          RelocData rd = new RelocData(RelocData.Type.RELATIVE_TO_ABSOLUTE, 4, offset(), destination);
-
-          _relocData.add(rd);
-        }
-        else
-        {
-          // Absolute address
-          _emitInt32( (int) (mem.target() + disp) );
+            // EBP/RBP/R13 == 5
+            if (baseReg != 5 && disp == 0) {
+                _emitMod(0, opReg, 4);
+                _emitSib(shift, indexReg, baseReg);
+            } else if (isInt8(disp)) {
+                _emitMod(1, opReg, 4);
+                _emitSib(shift, indexReg, baseReg);
+                _emitByte((byte) disp);
+            } else {
+                _emitMod(2, opReg, 4);
+                _emitSib(shift, indexReg, baseReg);
+                _emitInt32((int) disp);
+            }
         }
 
-    } else {
+        // Address                       | 32-bit mode | 64-bit mode
+        // ------------------------------+-------------+---------------
+        // [displacement]                |   ABSOLUTE  | RELATIVE (RIP)
+        // [index * scale + displacemnt] |   ABSOLUTE  | ABSOLUTE (ZERO EXTENDED)
+        else {
+            // In 32 bit mode is used absolute addressing model.
+            // In 64 bit mode is used relative addressing model together with absolute
+            // addressing one. Main problem is that if instruction contains SIB then
+            // relative addressing (RIP) is not possible.
+            if (!is64()) {
 
-        // X64 uses relative addressing model
-        if (mem.hasLabel())
-        {
-          Label label = mem.label();
+                if (mem.hasIndex()) {
+                    // ASMJIT_ASSERT(mem.index() != 4); // ESP/RSP == 4
+                    _emitMod(0, opReg, 4);
+                    _emitSib(shift, indexReg, 5);
+                } else {
+                    _emitMod(0, opReg, 5);
+                }
 
-          if (mem.hasIndex())
-          {
-            // Indexing is not possible
-              throw new IllegalArgumentException("illegal addressing");
-          }
+                // X86 uses absolute addressing model, all relative addresses will be
+                // relocated to absolute ones.
+                if (mem.hasLabel()) {
+                    Label label = mem.label();
+                    int relocId = _relocData.size();
 
-          // Relative address (RIP +/- displacement)
-          _emitMod(0, opReg, 5);
 
-          disp -= (4 + immSize);
+                    long destination = disp;
+                    if (label.isBound()) {
+                        destination += label.position();
+                        // Dummy DWORD
+                        _emitInt32(0);
+                    } else {
+                        _emitDisplacement(label, -4 - immSize, 4).relocId = relocId;
+                    }
 
-          if (label.isBound())
-          {
-            disp += offset() - label.position();
-            _emitInt32((int) disp);
-          }
-          else
-          {
-            _emitDisplacement(label, disp, 4);
-          }
+                    // Relative addressing will be relocated to absolute address.
+                    RelocData rd = new RelocData(RelocData.Type.RELATIVE_TO_ABSOLUTE, 4, offset(), destination);
+
+                    _relocData.add(rd);
+                } else {
+                    // Absolute address
+                    _emitInt32((int) (mem.target() + disp));
+                }
+
+            } else {
+
+                // X64 uses relative addressing model
+                if (mem.hasLabel()) {
+                    Label label = mem.label();
+
+                    if (mem.hasIndex()) {
+                        // Indexing is not possible
+                        throw new IllegalArgumentException("illegal addressing");
+                    }
+
+                    // Relative address (RIP +/- displacement)
+                    _emitMod(0, opReg, 5);
+
+                    disp -= (4 + immSize);
+
+                    if (label.isBound()) {
+                        disp += offset() - label.position();
+                        _emitInt32((int) disp);
+                    } else {
+                        _emitDisplacement(label, disp, 4);
+                    }
+                } else {
+                    // Absolute address (truncated to 32 bits), this kind of address requires
+                    // SIB byte (4)
+                    _emitMod(0, opReg, 4);
+
+                    if (mem.hasIndex()) {
+                        // ASMJIT_ASSERT(mem.index() != 4); // ESP/RSP == 4
+                        _emitSib(shift, indexReg, 5);
+                    } else {
+                        _emitSib(0, 4, 5);
+                    }
+
+                    // truncate to 32 bits
+                    long target = mem.target() + disp;
+
+                    if (target > 0xFFFFFFFFL) {
+                        _logger.log("; Warning: Absolute address truncated to 32 bits\n");
+                    }
+
+                    _emitInt32((int) target);
+                }
+
+            }
+
         }
-        else
-        {
-          // Absolute address (truncated to 32 bits), this kind of address requires
-          // SIB byte (4)
-          _emitMod(0, opReg, 4);
-
-          if (mem.hasIndex())
-          {
-            // ASMJIT_ASSERT(mem.index() != 4); // ESP/RSP == 4
-            _emitSib(shift, indexReg, 5);
-          }
-          else
-          {
-            _emitSib(0, 4, 5);
-          }
-
-          // truncate to 32 bits
-          long target = mem.target() + disp;
-
-          if (target > 0xFFFFFFFFL)
-          {
-            if (_logger != null)
-              _logger.log("; Warning: Absolute address truncated to 32 bits\n");
-          }
-
-          _emitInt32( (int) target );
-        }
-
     }
-
-  }
-}
 
     void _emitX86Inl(int opCode, boolean i16bit, boolean rexw, int reg) {
         _emitX86Inl(opCode, i16bit, intValue(rexw), reg);
     }
+
     void _emitX86Inl(int opCode, boolean i16bit, int rexw, int reg) {
         // 16 bit prefix
         if (i16bit) {
@@ -535,13 +499,15 @@ void _emitModM(int opReg, Mem mem, int immSize)
 
         _emitByte((opCode & 0x000000FF) + (reg & 0x7));
     }
+    
     void _emitModRM(int opReg, Operand op, int immSize) {
-      assert(op.op() == OP_REG || op.op() == OP_MEM);
+        assert (op.op() == OP_REG || op.op() == OP_MEM);
 
-      if (op.op() == OP_REG)
-        _emitModR(opReg, ((BaseReg) op).code());
-      else
-        _emitModM(opReg, (Mem) op, immSize);
+        if (op.op() == OP_REG) {
+            _emitModR(opReg, ((BaseReg) op).code());
+        } else {
+            _emitModM(opReg, (Mem) op, immSize);
+        }
     }
 
     /** Emit MODR/M byte. */
