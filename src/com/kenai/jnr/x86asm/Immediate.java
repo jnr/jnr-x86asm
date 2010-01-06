@@ -89,8 +89,25 @@ public final class Immediate extends Operand {
         return relocMode;
     }
 
+    /**
+     * Internal cache of common native long values
+     */
+    private static final class Cache {
+        private Cache() {}
+
+        static final Immediate[] cache = new Immediate[256];
+
+        static {
+            for (int i = 0; i < cache.length; ++i) {
+                cache[i] = new Immediate(i - 128, false);
+            }
+        }
+
+    }
+
     public static final Immediate imm(long value) {
-        return new Immediate(value, false);
+        return value >= -128 && value <= 127
+            ? Cache.cache[128 + (int) value] : new Immediate(value, false);
     }
 
     public static final Immediate uimm(long value) {
