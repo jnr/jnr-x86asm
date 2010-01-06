@@ -50,7 +50,10 @@ import static com.kenai.jnr.x86asm.SIZE.*;
 public final class Asm {
     private Asm() {}
 
+    /** @deprecated Use {@link #X86_32} */
+    @Deprecated
     public static final CPU I386 = CPU.I386;
+    public static final CPU X86_32 = CPU.X86_32;
     public static final CPU X86_64 = CPU.X86_64;
     
     /** No register, can be used only in @c Mem operand. */
