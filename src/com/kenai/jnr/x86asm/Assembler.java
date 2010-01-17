@@ -65,6 +65,7 @@ import static com.kenai.jnr.x86asm.Util.*;
 public final class Assembler extends Serializer {
     private final CodeBuffer _buffer = new CodeBuffer();
     private final List<RelocData> _relocData = new LinkedList<RelocData>();
+    private final CpuInfo cpuInfo = CpuInfo.GENERIC;
     private int _properties = 0;
 
     /** Size of possible trampolines. */
@@ -2132,6 +2133,118 @@ public final class Assembler extends Serializer {
 
                 TrampolineWriter.writeTrampoline(buffer, r.destination);
             }
+        }
+    }
+    // NOPs optimized for Intel:
+    //   Intel 64 and IA-32 Architectures Software Developer's Manual
+    //   - Volume 2B
+    //   - Instruction Set Reference N-Z
+    //     - NOP
+
+    // NOPs optimized for AMD:
+    //   Software Optimization Guide for AMD Family 10h Processors (Quad-Core)
+    //   - 4.13 - Code Padding with Operand-Size Override and Multibyte NOP
+    // Intel and AMD
+    private static final int nop1[] = { 0x90 };
+    private static final int nop2[] = { 0x66, 0x90 };
+    private static final int nop3[] = { 0x0F, 0x1F, 0x00 };
+    private static final int nop4[] = { 0x0F, 0x1F, 0x40, 0x00 };
+    private static final int nop5[] = { 0x0F, 0x1F, 0x44, 0x00, 0x00 };
+    private static final int nop6[] = { 0x66, 0x0F, 0x1F, 0x44, 0x00, 0x00 };
+    private static final int nop7[] = { 0x0F, 0x1F, 0x80, 0x00, 0x00, 0x00, 0x00 };
+    private static final int nop8[] = { 0x0F, 0x1F, 0x84, 0x00, 0x00, 0x00, 0x00, 0x00 };
+    private static final int nop9[] = { 0x66, 0x0F, 0x1F, 0x84, 0x00, 0x00, 0x00, 0x00, 0x00 };
+
+    // AMD
+    private static final int nop10[] = { 0x66, 0x66, 0x0F, 0x1F, 0x84, 0x00, 0x00, 0x00, 0x00, 0x00 };
+    private static final int nop11[] = { 0x66, 0x66, 0x66, 0x0F, 0x1F, 0x84, 0x00, 0x00, 0x00, 0x00, 0x00 };
+
+    public void align(long m) {
+        if (_logger != null) _logger.logAlign(m);
+
+        if (m < 1) return;
+
+        if (m > 64) {
+            assert (m <= 64);
+            return;
+        }
+
+        int i = (int) (m - (offset() % m));
+        if (i == m) return;
+
+        if ((_properties & (1 << PROPERTY_OPTIMIZE_ALIGN)) != 0) {
+            int n;
+
+            if (cpuInfo.vendor == CpuInfo.Vendor.INTEL &&
+               ((cpuInfo.family & 0x0F) == 6 ||
+                (cpuInfo.family & 0x0F) == 15)) {
+                do {
+                    int[] p;
+                    switch (i) {
+                        case  1: p = nop1; n = 1; break;
+                        case  2: p = nop2; n = 2; break;
+                        case  3: p = nop3; n = 3; break;
+                        case  4: p = nop4; n = 4; break;
+                        case  5: p = nop5; n = 5; break;
+                        case  6: p = nop6; n = 6; break;
+                        case  7: p = nop7; n = 7; break;
+                        case  8: p = nop8; n = 8; break;
+                        default: p = nop9; n = 9; break;
+                    }
+
+                    i -= n;
+                    for (int idx = 0; n > 0; ++idx, --n) {
+                        _emitByte(p[idx]);
+                    }
+                } while (i > 0);
+
+                return;
+            }
+
+            if (cpuInfo.vendor == CpuInfo.Vendor.AMD
+                    && cpuInfo.family >= 0x0F) {
+                do {
+                    int[] p;
+                    switch (i) {
+                        case  1: p = nop1 ; n =  1; break;
+                        case  2: p = nop2 ; n =  2; break;
+                        case  3: p = nop3 ; n =  3; break;
+                        case  4: p = nop4 ; n =  4; break;
+                        case  5: p = nop5 ; n =  5; break;
+                        case  6: p = nop6 ; n =  6; break;
+                        case  7: p = nop7 ; n =  7; break;
+                        case  8: p = nop8 ; n =  8; break;
+                        case  9: p = nop9 ; n =  9; break;
+                        case 10: p = nop10; n = 10; break;
+                        default: p = nop11; n = 11; break;
+                    }
+
+                    i -= n;
+                    for (int idx = 0; n > 0; ++idx, --n) {
+                        _emitByte(p[idx]);
+                    }
+                } while (i > 0);
+
+                return;
+            }
+
+            if (!is64()) {
+                // legacy NOPs, 0x90 with 0x66 prefix.
+                do {
+                    switch (i) {
+                        default: _emitByte(0x66); i--;
+                        case  3: _emitByte(0x66); i--;
+                        case  2: _emitByte(0x66); i--;
+                        case  1: _emitByte(0x90); i--;
+                    }
+                } while (i > 0);
+            }
+        }
+
+        // legacy NOPs, only 0x90
+        // In 64-bit mode, we can't use 0x66 prefix
+        while (i-- > 0) {
+            _emitByte(0x90);
         }
     }
 
