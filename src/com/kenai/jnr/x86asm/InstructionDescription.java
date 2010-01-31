@@ -428,7 +428,7 @@ public final class InstructionDescription {
         MAKE_INST(INST_MPSADBW          , "mpsadbw"          , I_MMU_RM_IMM8   , O_XMM           , O_XMM_MEM       , 0, 0x660F3A42, 0),
         MAKE_INST(INST_MUL              , "mul"              , I_RM            , 0               , 0               , 4, 0x000000F6, 0),
         MAKE_INST(INST_MULPD            , "mulpd"            , I_MMU_RMI       , O_XMM           , O_XMM_MEM       , 0, 0x66000F59, 0),
-        MAKE_INST(INST_MULPS            , "mulps"            , I_MMU_RMI       , O_XMM           , O_XMM_MEM       , 0, 0xF3000F59, 0),
+        MAKE_INST(INST_MULPS            , "mulps"            , I_MMU_RMI       , O_XMM           , O_XMM_MEM       , 0, 0x00000F59, 0),
         MAKE_INST(INST_MULSD            , "mulsd"            , I_MMU_RMI       , O_XMM           , O_XMM_MEM       , 0, 0xF2000F59, 0),
         MAKE_INST(INST_MULSS            , "mulss"            , I_MMU_RMI       , O_XMM           , O_XMM_MEM       , 0, 0xF3000F59, 0),
         MAKE_INST(INST_MWAIT            , "mwait"            , I_EMIT          , 0               , 0               , 0, 0x000F01C9, 0),
