@@ -4,7 +4,7 @@
   <groupId>org.jruby.extras</groupId>
   <artifactId>jnr-x86asm</artifactId>
   <packaging>jar</packaging>
-  <version>0.1-SNAPSHOT</version>
+  <version>0.1</version>
   <name>jnr-x86asm</name>
   <description>A pure-java X86 and X86_64 assembler</description>
   <url>http://jnr.kenai.com</url>
@@ -76,23 +76,8 @@
     </dependency>
   </dependencies>
   <build>
-    <!--
-    <directory>build</directory>
-    <outputDirectory>build/classes</outputDirectory>
-    <testOutputDirectory>build/test/classes</testOutputDirectory>
-    -->
     <sourceDirectory>src</sourceDirectory>
     <testSourceDirectory>test</testSourceDirectory>
-    <!--
-    <resources>
-        <resource>
-            <directory>src/com/kenai/jaffl/provider/jffi</directory>
-            <excludes>
-                <exclude>**/*.java</exclude>
-            </excludes>
-        </resource>
-    </resources>
-    -->
     <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
