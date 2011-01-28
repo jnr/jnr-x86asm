@@ -1,3 +1,5 @@
+//
+// Copyright (C) 2010 Wayne Meissner
 // Copyright (c) 2008-2009, Petr Kobalicek <kobalicek.petr@gmail.com>
 //
 // Permission is hereby granted, free of charge, to any person
