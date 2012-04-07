@@ -47,7 +47,7 @@ public final class InstructionDescription {
 
     private static final InstructionDescription MAKE_INST(INST_CODE code, String name,
             InstructionGroup group, int of1, int of2, int r, int op1, int op2) {
-        InstructionDescription id = new InstructionDescription(code, name, group, of2, of2, r, op1, op2);
+        InstructionDescription id = new InstructionDescription(code, name, group, of1, of2, r, op1, op2);
         table.put(code, id);
         return id;
     }
